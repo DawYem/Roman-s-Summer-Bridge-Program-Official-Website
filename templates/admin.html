@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="top-nav">
+            <a href="/" class="brand-mark" aria-label="Roman's Summer Bridge Program Home">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Roman's Summer Bridge Program logo" class="brand-logo">
+            </a>
+            <a href="/" class="nav-link">Home</a>
+            <a href="/login" class="nav-link">Login</a>
+            <a href="/signup" class="nav-link">Sign Up</a>
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+            <a href="/admin" class="nav-link active">Admin Dashboard</a>
+            <a href="/logout" class="nav-link logout-link">Logout</a>
+        </div>
+
+        <h1>Admin Dashboard</h1>
+        <p>
+            <a href="/admin/export" class="nav-link">Export Volunteer Data (Excel)</a>
+        </p>
+        <h2>All Volunteer Entries</h2>
+
+        {% if records %}
+            <ul>
+                {% for record in records %}
+                    <li>
+                        <strong>{{ record[0] }}</strong> — {{ record[1] }} hrs — {{ record[2] }} — {{ record[3] }}
+                        {% if record[4] %}
+                            <br>
+                            <img src="{{ url_for('static', filename='uploads/' + record[4]) }}" width="120" class="tap-zoom" alt="Volunteer submission image">
+                        {% endif %}
+                    </li>
+                    <br>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No volunteer entries yet.</p>
+        {% endif %}
+
+        <h2>User Management</h2>
+        <ul>
+            {% for user in users %}
+                <li>
+                    {{ user[0] }}
+
+                    {% if user[1] == 1 %}
+                        (Admin)
+                        <a href="/toggle_admin/{{ user[0] }}">Remove Admin</a>
+                    {% else %}
+                        <a href="/toggle_admin/{{ user[0] }}">Make Admin</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <script src="{{ url_for('static', filename='image-zoom.js') }}"></script>
+</body>
+</html>
