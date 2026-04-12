@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, send_file
+from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import os
@@ -33,7 +34,22 @@ def init_db():
     conn.close()
      
 app = Flask(__name__)
-app.secret_key = "hedaredbro12467"
+app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
+
+frontend_origins = [
+    origin.strip()
+    for origin in os.getenv("FRONTEND_ORIGIN", "").split(",")
+    if origin.strip()
+]
+CORS(
+    app,
+    resources={r"/*": {"origins": frontend_origins or "*"}},
+    supports_credentials=True,
+)
+
+if frontend_origins:
+    app.config["SESSION_COOKIE_SAMESITE"] = "None"
+    app.config["SESSION_COOKIE_SECURE"] = True
 
 UPLOAD_FOLDER = "static/uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -55,6 +71,11 @@ def add_no_cache_headers(response):
 @app.route("/")
 def home():
     return render_template ("home.html")
+
+
+@app.route("/health")
+def health():
+    return {"status": "ok"}, 200
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
