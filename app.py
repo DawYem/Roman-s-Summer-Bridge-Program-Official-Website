@@ -109,7 +109,7 @@ def init_db():
     conn.close()
      
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
+app.secret_key = os.getenv("SECRET_KEY") or "dev-secret-change-me"
 app.url_map.strict_slashes = False
 
 # Gunicorn imports the module and does not execute the __main__ block.
