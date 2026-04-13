@@ -16,9 +16,18 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
         password TEXT NOT NULL,
+        age INTEGER,
+        grade_level TEXT,
         is_admin INTEGER NOT NULL DEFAULT 0
     )
 """)
+
+    cursor.execute("PRAGMA table_info(users)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+    if "age" not in existing_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN age INTEGER")
+    if "grade_level" not in existing_columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN grade_level TEXT")
     
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS volunteer_hours (
@@ -82,19 +91,48 @@ def signup():
     if request.method == "POST":
         username = request.form["username"].strip()
         password = request.form["password"]
+        age_raw = request.form["age"].strip()
+        grade_level = request.form["grade_level"].strip()
+
+        try:
+            age = int(age_raw)
+        except ValueError:
+            age = None
 
         if not username:
             return render_template(
                 "signup.html",
                 error="First and last name cannot be empty.",
-                signup_username=username
+                signup_username=username,
+                signup_age=age_raw,
+                signup_grade_level=grade_level
             )
 
         if not has_first_and_last_name(username):
             return render_template(
                 "signup.html",
                 error="Please enter both first and last name.",
-                signup_username=username
+                signup_username=username,
+                signup_age=age_raw,
+                signup_grade_level=grade_level
+            )
+
+        if age is None or age <= 0:
+            return render_template(
+                "signup.html",
+                error="Please enter a valid age.",
+                signup_username=username,
+                signup_age=age_raw,
+                signup_grade_level=grade_level
+            )
+
+        if not grade_level:
+            return render_template(
+                "signup.html",
+                error="Please enter a grade level.",
+                signup_username=username,
+                signup_age=age_raw,
+                signup_grade_level=grade_level
             )
 
         hashed_password = generate_password_hash(password)
@@ -111,7 +149,9 @@ def signup():
             return render_template(
                 "signup.html",
                 error="That name is already registered. Please log in.",
-                signup_username=username
+                signup_username=username,
+                signup_age=age_raw,
+                signup_grade_level=grade_level
             )
         
         # Check if this is the first user
@@ -120,13 +160,13 @@ def signup():
         is_admin = 1 if user_count == 0 else 0
         
         cursor.execute(
-            "INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)",
-            (username, hashed_password, is_admin)
+            "INSERT INTO users (username, password, age, grade_level, is_admin) VALUES (?, ?, ?, ?, ?)",
+            (username, hashed_password, age, grade_level, is_admin)
         )
         conn.commit()
         conn.close()
         return redirect(url_for("login"))
-    return render_template("signup.html", signup_username="")
+    return render_template("signup.html", signup_username="", signup_age="", signup_grade_level="")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -144,13 +184,13 @@ def login():
         conn = sqlite3.connect("users.db")
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT * FROM users WHERE username=?",
+            "SELECT username, password FROM users WHERE username=?",
             (username,)
         )
         user = cursor.fetchone()
         conn.close()
         
-        if user and check_password_hash(user[2], password):
+        if user and check_password_hash(user[1], password):
             session["username"] = username
             return redirect(url_for("dashboard"))
         else:
@@ -243,14 +283,15 @@ def admin():
         return "Access denied"
 
     cursor.execute("""
-        SELECT username, hours, task, date, image
-        FROM volunteer_hours
+        SELECT vh.username, u.age, u.grade_level, vh.hours, vh.task, vh.date, vh.image
+        FROM volunteer_hours vh
+        LEFT JOIN users u ON LOWER(u.username) = LOWER(vh.username)
         ORDER BY date DESC
     """)
     all_records = cursor.fetchall()
 
     cursor.execute(
-        "SELECT username, is_admin FROM users ORDER BY username"
+        "SELECT username, age, grade_level, is_admin FROM users ORDER BY username"
     )
     users = cursor.fetchall()
 
@@ -313,7 +354,12 @@ def export_volunteer_data():
         return "Access denied"
 
     cursor.execute(
-        "SELECT username, hours, task, date, image FROM volunteer_hours ORDER BY date DESC"
+        """
+        SELECT vh.username, u.age, u.grade_level, vh.hours, vh.task, vh.date, vh.image
+        FROM volunteer_hours vh
+        LEFT JOIN users u ON LOWER(u.username) = LOWER(vh.username)
+        ORDER BY vh.date DESC
+        """
     )
     records = cursor.fetchall()
     conn.close()
@@ -327,7 +373,7 @@ def export_volunteer_data():
     worksheet = workbook.active
     worksheet.title = "Volunteer Submissions"
 
-    headers = ["Username", "Hours", "Task", "Date", "Image File"]
+    headers = ["Username", "Age", "Grade Level", "Hours", "Task", "Date", "Image File"]
     worksheet.append(headers)
 
     for row in records:

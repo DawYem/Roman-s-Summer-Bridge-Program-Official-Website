@@ -4,12 +4,13 @@ app.init_db()
 os.makedirs(app.app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 c = app.app.test_client()
-u = 'test_' + uuid.uuid4().hex[:8]
+u = 'Test User ' + uuid.uuid4().hex[:8]
 
 # Signup
 print("Signing up...")
-r1 = c.post('/signup', data={'username': u, 'password': 'testpass'})
+r1 = c.post('/signup', data={'username': u, 'password': 'testpass', 'age': '13', 'grade_level': '7th Grade'})
 print('Signup status:', r1.status_code)
+assert r1.status_code == 302
 
 # Login with follow_redirects to establish session
 print("Logging in...")

@@ -23,6 +23,35 @@
             <label>First and Last Name:</label>
             <input type="text" name="username" placeholder="First Last" value="{{ signup_username }}" required>
             <br><br>
+            <label>Age:</label>
+            <input type="number" name="age" min="1" value="{{ signup_age }}" required>
+            <br><br>
+            <label>Grade Level:</label>
+            <select name="grade_level" required>
+                <option value="" disabled {% if not signup_grade_level %}selected{% endif %}>Select grade level</option>
+                <optgroup label="School Grades">
+                <option value="1st Grade" {% if signup_grade_level == '1st Grade' %}selected{% endif %}>1st Grade</option>
+                <option value="2nd Grade" {% if signup_grade_level == '2nd Grade' %}selected{% endif %}>2nd Grade</option>
+                <option value="3rd Grade" {% if signup_grade_level == '3rd Grade' %}selected{% endif %}>3rd Grade</option>
+                <option value="4th Grade" {% if signup_grade_level == '4th Grade' %}selected{% endif %}>4th Grade</option>
+                <option value="5th Grade" {% if signup_grade_level == '5th Grade' %}selected{% endif %}>5th Grade</option>
+                <option value="6th Grade" {% if signup_grade_level == '6th Grade' %}selected{% endif %}>6th Grade</option>
+                <option value="7th Grade" {% if signup_grade_level == '7th Grade' %}selected{% endif %}>7th Grade</option>
+                <option value="8th Grade" {% if signup_grade_level == '8th Grade' %}selected{% endif %}>8th Grade</option>
+                <option value="9th Grade" {% if signup_grade_level == '9th Grade' %}selected{% endif %}>9th Grade</option>
+                <option value="10th Grade" {% if signup_grade_level == '10th Grade' %}selected{% endif %}>10th Grade</option>
+                <option value="11th Grade" {% if signup_grade_level == '11th Grade' %}selected{% endif %}>11th Grade</option>
+                <option value="12th Grade" {% if signup_grade_level == '12th Grade' %}selected{% endif %}>12th Grade</option>
+                </optgroup>
+                <optgroup label="College">
+                <option value="College Freshman" {% if signup_grade_level == 'College Freshman' %}selected{% endif %}>College Freshman</option>
+                <option value="College Sophomore" {% if signup_grade_level == 'College Sophomore' %}selected{% endif %}>College Sophomore</option>
+                <option value="College Junior" {% if signup_grade_level == 'College Junior' %}selected{% endif %}>College Junior</option>
+                <option value="College Senior" {% if signup_grade_level == 'College Senior' %}selected{% endif %}>College Senior</option>
+                </optgroup>
+                <option value="Post-Grad" {% if signup_grade_level == 'Post-Grad' %}selected{% endif %}>Post-Grad</option>
+            </select>
+            <br><br>
             <label>Password:</label>
             <input type="password" name="password" required>
             <br><br>
