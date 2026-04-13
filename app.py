@@ -152,7 +152,8 @@ def signup():
                 signup_grade_level=grade_level
             )
 
-        if username.strip().lower() in get_reserved_usernames():
+        normalized_username = username.strip().lower()
+        if normalized_username in get_reserved_usernames() and normalized_username not in get_admin_usernames():
             return render_template(
                 "signup.html",
                 error="That username is reserved and cannot be used.",
@@ -228,14 +229,14 @@ def login():
         conn = sqlite3.connect("users.db")
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT username, password FROM users WHERE username=?",
+            "SELECT username, password FROM users WHERE LOWER(username)=LOWER(?)",
             (username,)
         )
         user = cursor.fetchone()
         conn.close()
         
         if user and check_password_hash(user[1], password):
-            session["username"] = username
+            session["username"] = user[0]
             return redirect(url_for("dashboard"))
         else:
             return render_template(
