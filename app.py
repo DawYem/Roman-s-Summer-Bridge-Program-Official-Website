@@ -183,8 +183,13 @@ def add_no_cache_headers(response):
     return response
 
 @app.route("/")
+def root():
+    return redirect(url_for("home"))
+
+
+@app.route("/home")
 def home():
-    return render_template ("home.html")
+    return render_template("home.html")
 
 
 @app.route("/health")
