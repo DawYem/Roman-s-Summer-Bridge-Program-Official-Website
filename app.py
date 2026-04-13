@@ -110,6 +110,7 @@ def init_db():
      
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
+app.url_map.strict_slashes = False
 
 frontend_origins = [
     origin.strip()
