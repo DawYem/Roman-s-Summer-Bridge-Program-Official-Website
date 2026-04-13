@@ -70,12 +70,16 @@ def has_first_and_last_name(name):
     return len(parts) >= 2
 
 
+def normalize_username(name):
+    return " ".join((name or "").split()).strip().lower()
+
+
 def get_admin_usernames():
     admin_usernames = {
-        os.getenv("ADMIN_USERNAME", "").strip().lower(),
+        normalize_username(os.getenv("ADMIN_USERNAME", "")),
     }
     admin_usernames.update(
-        username.strip().lower()
+        normalize_username(username)
         for username in os.getenv("ADMIN_USERNAMES", "").split(",")
         if username.strip()
     )
@@ -84,10 +88,10 @@ def get_admin_usernames():
 
 def get_reserved_usernames():
     reserved_usernames = {
-        "dawit yemane",
+        normalize_username("Dawit Yemane"),
     }
     reserved_usernames.update(
-        username.strip().lower()
+        normalize_username(username)
         for username in os.getenv("RESERVED_USERNAMES", "").split(",")
         if username.strip()
     )
@@ -102,7 +106,7 @@ def user_is_admin(cursor, username):
     result = cursor.fetchone()
     if result and result[0] == 1:
         return True
-    return username.strip().lower() in get_admin_usernames()
+    return normalize_username(username) in get_admin_usernames()
 
 
 @app.after_request
@@ -124,7 +128,7 @@ def health():
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
-        username = request.form["username"].strip()
+        username = " ".join(request.form["username"].split())
         password = request.form["password"]
         age_raw = request.form["age"].strip()
         grade_level = request.form["grade_level"].strip()
@@ -152,7 +156,7 @@ def signup():
                 signup_grade_level=grade_level
             )
 
-        normalized_username = username.strip().lower()
+        normalized_username = normalize_username(username)
         if normalized_username in get_reserved_usernames() and normalized_username not in get_admin_usernames():
             return render_template(
                 "signup.html",
@@ -184,11 +188,11 @@ def signup():
         conn = sqlite3.connect("users.db")
         cursor = conn.cursor()
 
-        cursor.execute(
-            "SELECT 1 FROM users WHERE LOWER(username) = LOWER(?)",
-            (username,)
+        cursor.execute("SELECT username FROM users")
+        existing_user = next(
+            (row for row in cursor.fetchall() if normalize_username(row[0]) == normalized_username),
+            None,
         )
-        existing_user = cursor.fetchone()
         if existing_user:
             conn.close()
             return render_template(
@@ -216,7 +220,7 @@ def signup():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method =="POST":
-        username = request.form["username"].strip()
+        username = " ".join(request.form["username"].split())
         password = request.form["password"]
 
         if not username or not password:
@@ -228,11 +232,12 @@ def login():
         
         conn = sqlite3.connect("users.db")
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT username, password FROM users WHERE LOWER(username)=LOWER(?)",
-            (username,)
+        cursor.execute("SELECT username, password FROM users")
+        normalized_username = normalize_username(username)
+        user = next(
+            (row for row in cursor.fetchall() if normalize_username(row[0]) == normalized_username),
+            None,
         )
-        user = cursor.fetchone()
         conn.close()
         
         if user and check_password_hash(user[1], password):
