@@ -184,6 +184,13 @@ h2 {
     margin-top: 10px;
 }
 
+.auth-form input,
+.auth-form select,
+.dashboard-form input,
+.dashboard-form button {
+    width: min(100%, 520px);
+}
+
 .form-field {
     margin-bottom: 14px;
     text-align: left;
@@ -229,16 +236,110 @@ h2 {
 
 @media (max-width: 640px) {
     .container {
-        margin: 18px auto;
-        padding: 18px;
+        width: calc(100% - 16px);
+        margin: 12px auto;
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .top-nav {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .brand-mark {
+        align-self: center;
+    }
+
+    .nav-link {
+        width: 100%;
+        text-align: center;
+    }
+
+    .hero-shell {
+        padding: 4px 0 0;
+    }
+
+    .hero-logo {
+        width: 122px;
+        height: 122px;
+    }
+
+    .hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hero-btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .hero-highlights {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hero-highlights li {
+        width: 100%;
+        text-align: center;
     }
 
     .auth-panel {
         padding: 20px 16px;
     }
 
+    .auth-submit {
+        width: 100%;
+        min-width: 0;
+    }
+
     .form-field-inline {
         grid-template-columns: 1fr;
+    }
+
+    .dashboard-form input,
+    .dashboard-form button {
+        width: 100%;
+    }
+
+    .image-lightbox {
+        padding: 12px;
+    }
+
+    .image-lightbox-close {
+        top: 10px;
+        right: 10px;
+    }
+
+    .image-lightbox-hint {
+        bottom: 10px;
+        font-size: 0.8rem;
+        text-align: center;
+        width: calc(100% - 24px);
+    }
+
+    ul {
+        text-align: left;
+    }
+
+    li {
+        padding: 10px;
+        word-break: break-word;
+    }
+}
+
+@media (max-width: 420px) {
+    .hero-title {
+        font-size: 1.55rem;
+    }
+
+    .hero-subtitle {
+        font-size: 0.95rem;
+    }
+
+    .auth-kicker {
+        font-size: 0.72rem;
     }
 }
 
