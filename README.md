@@ -3,7 +3,7 @@
 A full-stack web application built to manage volunteer activity, user accounts, and administrative operations for the Roman’s Summer Bridge Program.
 
 ## Live Demo
-[Insert Deployed Link Here]
+https://roman-s-summer-bridge-program-official.onrender.com
 
 ## Screenshots
 <img width="1905" height="966" alt="image" src="https://github.com/user-attachments/assets/5e6a3ec5-e721-4b29-9bbf-7350b5302544" />
@@ -24,7 +24,8 @@ A full-stack web application built to manage volunteer activity, user accounts, 
 - **Backend:** Flask (Python)  
 - **Database:** SQLite  
 - **Styling:** CSS / Bootstrap  
-- **Architecture:** RESTful API design  
+- **Architecture:** RESTful API design
+- **Deployment:** Render 
 
 ## Key Highlights
 - Built a full-stack system integrating a React frontend with a Flask backend via REST APIs  
@@ -35,28 +36,9 @@ A full-stack web application built to manage volunteer activity, user accounts, 
 ## Overview
 This platform streamlines operations for the Roman’s Summer Bridge Program by allowing volunteers to log and verify their hours while enabling administrators to monitor participation and manage users efficiently.
 
-## Deploy: Render Backend + Netlify Frontend
+## Deployment
+Deployed on Render for backend hosting and API services
 
-### 1) Deploy Backend on Render
-1. Push this repo to GitHub.
-2. In Render, create a new Web Service from your repo.
-3. Render will detect `render.yaml` automatically.
-4. Set environment variable `FRONTEND_ORIGIN` to your Netlify site URL (example: `https://your-site.netlify.app`).
-5. Deploy and copy your backend URL (example: `https://your-backend.onrender.com`).
-6. Verify health endpoint at `/health`.
-
-### 2) Deploy Frontend on Netlify
-1. Create a Netlify site from your frontend code.
-2. Add an environment variable in Netlify:
-	- `VITE_API_BASE_URL` or `REACT_APP_API_BASE_URL` or your frontend equivalent
-	- Value: your Render backend URL (example: `https://your-backend.onrender.com`)
-3. Update frontend API calls to use that environment variable.
-4. Redeploy frontend.
-
-### Important Notes
-- This project currently uses SQLite (`users.db`), which is not persistent for production multi-instance scaling.
-- For real production use, move to PostgreSQL.
-- If you keep cookie-based auth across domains, your frontend requests must include credentials and the backend `FRONTEND_ORIGIN` must exactly match the Netlify domain.
 
 ## Future Improvements
 - Migrate to PostgreSQL for production-level scalability  
