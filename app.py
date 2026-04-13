@@ -112,6 +112,10 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
 app.url_map.strict_slashes = False
 
+# Gunicorn imports the module and does not execute the __main__ block.
+# Initialize DB schema at import time so first request does not fail.
+init_db()
+
 frontend_origins = [
     origin.strip()
     for origin in os.getenv("FRONTEND_ORIGIN", "").split(",")
@@ -500,5 +504,4 @@ def export_volunteer_data():
     )
 
 if __name__ == "__main__":
-    init_db()
     app.run(debug = True)
