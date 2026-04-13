@@ -6,39 +6,105 @@ import os
 from io import BytesIO
 from datetime import datetime
 from werkzeug.utils import secure_filename
+import importlib
+
+try:
+    psycopg2 = importlib.import_module("psycopg2")
+except ImportError:
+    psycopg2 = None
+
+
+DB_PATH = os.getenv("DATABASE_PATH", "users.db")
+
+
+def get_database_url():
+    return os.getenv("DATABASE_URL")
+
+
+def using_postgres():
+    return bool(get_database_url())
+
+
+def get_db_connection():
+    database_url = get_database_url()
+    if database_url:
+        if psycopg2 is None:
+            raise RuntimeError("psycopg2-binary is required when DATABASE_URL is set.")
+        sslmode = os.getenv("PGSSLMODE")
+        if sslmode:
+            return psycopg2.connect(database_url, sslmode=sslmode)
+        return psycopg2.connect(database_url)
+    return sqlite3.connect(DB_PATH)
+
+
+def db_placeholders(count):
+    return ", ".join(["%s" if using_postgres() else "?"] * count)
 
 
 def init_db():
-    conn = sqlite3.connect("users.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL,
-        password TEXT NOT NULL,
-        age INTEGER,
-        grade_level TEXT,
-        is_admin INTEGER NOT NULL DEFAULT 0
-    )
-""")
 
-    cursor.execute("PRAGMA table_info(users)")
-    existing_columns = {row[1] for row in cursor.fetchall()}
-    if "age" not in existing_columns:
-        cursor.execute("ALTER TABLE users ADD COLUMN age INTEGER")
-    if "grade_level" not in existing_columns:
-        cursor.execute("ALTER TABLE users ADD COLUMN grade_level TEXT")
-    
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS volunteer_hours (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL,
-        hours REAL NOT NULL,
-        task TEXT NOT NULL,
-        date TEXT NOT NULL,
-        image TEXT
-    )
-""")
+    if using_postgres():
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            age INTEGER,
+            grade_level TEXT,
+            is_admin INTEGER NOT NULL DEFAULT 0
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS volunteer_hours (
+            id SERIAL PRIMARY KEY,
+            username TEXT NOT NULL,
+            hours REAL NOT NULL,
+            task TEXT NOT NULL,
+            date TEXT NOT NULL,
+            image TEXT
+        )
+        """)
+
+        cursor.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'users'"
+        )
+        existing_columns = {row[0] for row in cursor.fetchall()}
+        if "age" not in existing_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN age INTEGER")
+        if "grade_level" not in existing_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN grade_level TEXT")
+    else:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            password TEXT NOT NULL,
+            age INTEGER,
+            grade_level TEXT,
+            is_admin INTEGER NOT NULL DEFAULT 0
+        )
+        """)
+
+        cursor.execute("PRAGMA table_info(users)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+        if "age" not in existing_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN age INTEGER")
+        if "grade_level" not in existing_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN grade_level TEXT")
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS volunteer_hours (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            hours REAL NOT NULL,
+            task TEXT NOT NULL,
+            date TEXT NOT NULL,
+            image TEXT
+        )
+        """)
     conn.commit()
     conn.close()
      
@@ -185,7 +251,7 @@ def signup():
             )
 
         hashed_password = generate_password_hash(password)
-        conn = sqlite3.connect("users.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT username FROM users")
@@ -209,7 +275,7 @@ def signup():
         is_admin = 1 if user_count == 0 else 0
         
         cursor.execute(
-            "INSERT INTO users (username, password, age, grade_level, is_admin) VALUES (?, ?, ?, ?, ?)",
+            f"INSERT INTO users (username, password, age, grade_level, is_admin) VALUES ({db_placeholders(5)})",
             (username, hashed_password, age, grade_level, is_admin)
         )
         conn.commit()
@@ -230,7 +296,7 @@ def login():
                 login_username=username
             )
         
-        conn = sqlite3.connect("users.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT username, password FROM users")
         normalized_username = normalize_username(username)
@@ -259,7 +325,7 @@ def dashboard():
 
     username = session["username"]
 
-    conn = sqlite3.connect("users.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     is_admin = user_is_admin(cursor, username)
@@ -278,7 +344,7 @@ def dashboard():
             image_file.save(image_path)
 
         cursor.execute(
-            "INSERT INTO volunteer_hours (username, hours, task, date, image) VALUES (?, ?, ?, ?, ?)",
+            f"INSERT INTO volunteer_hours (username, hours, task, date, image) VALUES ({db_placeholders(5)})",
             (username, hours, task, date, filename)
         )
         conn.commit()
@@ -314,7 +380,7 @@ def admin():
     if "username" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect("users.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     if not user_is_admin(cursor, session["username"]):
@@ -343,7 +409,7 @@ def toggle_admin(username):
     if "username" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect("users.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     # check current user is admin
@@ -358,7 +424,7 @@ def toggle_admin(username):
 
     # toggle admin
     cursor.execute(
-        "UPDATE users SET is_admin = NOT is_admin WHERE username = ?",
+        f"UPDATE users SET is_admin = CASE WHEN is_admin = 1 THEN 0 ELSE 1 END WHERE username = {db_placeholders(1)}",
         (username,)
     )
 
@@ -373,7 +439,7 @@ def export_volunteer_data():
     if "username" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect("users.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     if not user_is_admin(cursor, session["username"]):

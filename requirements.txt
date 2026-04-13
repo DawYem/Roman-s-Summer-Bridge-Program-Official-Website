@@ -3,3 +3,4 @@ Flask-Cors
 gunicorn
 openpyxl
 Werkzeug
+psycopg2-binary
