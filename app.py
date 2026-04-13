@@ -171,7 +171,7 @@ def get_reserved_usernames():
 
 def user_is_admin(cursor, username):
     cursor.execute(
-        "SELECT is_admin FROM users WHERE username = ?",
+        f"SELECT is_admin FROM users WHERE username = {db_placeholders(1)}",
         (username,)
     )
     result = cursor.fetchone()
@@ -365,7 +365,7 @@ def dashboard():
         )
     else:
         cursor.execute(
-            "SELECT username, hours, task, date, image FROM volunteer_hours WHERE username=? ORDER BY date DESC",
+            f"SELECT username, hours, task, date, image FROM volunteer_hours WHERE username={db_placeholders(1)} ORDER BY date DESC",
             (username,)
         )
     records = cursor.fetchall()
