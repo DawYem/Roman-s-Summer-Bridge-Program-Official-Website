@@ -22,10 +22,10 @@ https://roman-s-summer-bridge-program-official.onrender.com
 ## Tech Stack
 - **Frontend:** React  
 - **Backend:** Flask (Python)  
-- **Database:** SQLite  
+- **Database:** PostgreSQL 
 - **Styling:** CSS / Bootstrap  
 - **Architecture:** RESTful API design
-- **Deployment:** Render 
+- **Deployment:** Render, Neon 
 
 ## Key Highlights
 - Built a full-stack system integrating a React frontend with a Flask backend via REST APIs  
@@ -38,10 +38,9 @@ This platform streamlines operations for the Roman’s Summer Bridge Program by 
 
 ## Deployment
 Deployed on Render for backend hosting and API services
-
+Used Neon for storing the PostgreSQL database.
 
 ## Future Improvements
-- Migrate to PostgreSQL for production-level scalability  
 - Integrate cloud storage (AWS S3) for image uploads  
 - Add real-time analytics for admin insights  
 - Improve UI/UX with modern component libraries  
