@@ -70,6 +70,41 @@ def has_first_and_last_name(name):
     return len(parts) >= 2
 
 
+def get_admin_usernames():
+    admin_usernames = {
+        os.getenv("ADMIN_USERNAME", "").strip().lower(),
+    }
+    admin_usernames.update(
+        username.strip().lower()
+        for username in os.getenv("ADMIN_USERNAMES", "").split(",")
+        if username.strip()
+    )
+    return {username for username in admin_usernames if username}
+
+
+def get_reserved_usernames():
+    reserved_usernames = {
+        "dawit yemane",
+    }
+    reserved_usernames.update(
+        username.strip().lower()
+        for username in os.getenv("RESERVED_USERNAMES", "").split(",")
+        if username.strip()
+    )
+    return {username for username in reserved_usernames if username}
+
+
+def user_is_admin(cursor, username):
+    cursor.execute(
+        "SELECT is_admin FROM users WHERE username = ?",
+        (username,)
+    )
+    result = cursor.fetchone()
+    if result and result[0] == 1:
+        return True
+    return username.strip().lower() in get_admin_usernames()
+
+
 @app.after_request
 def add_no_cache_headers(response):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
@@ -112,6 +147,15 @@ def signup():
             return render_template(
                 "signup.html",
                 error="Please enter both first and last name.",
+                signup_username=username,
+                signup_age=age_raw,
+                signup_grade_level=grade_level
+            )
+
+        if username.strip().lower() in get_reserved_usernames():
+            return render_template(
+                "signup.html",
+                error="That username is reserved and cannot be used.",
                 signup_username=username,
                 signup_age=age_raw,
                 signup_grade_level=grade_level
@@ -212,12 +256,7 @@ def dashboard():
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
 
-    cursor.execute(
-        "SELECT is_admin FROM users WHERE username=?",
-        (username,)
-    )
-    admin_row = cursor.fetchone()
-    is_admin = bool(admin_row and admin_row[0] == 1)
+    is_admin = user_is_admin(cursor, username)
 
     if request.method == "POST":
         hours = request.form["hours"]
@@ -272,13 +311,7 @@ def admin():
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
 
-    cursor.execute(
-        "SELECT is_admin FROM users WHERE username = ?",
-        (session["username"],)
-    )
-    result = cursor.fetchone()
-
-    if not result or result[0] != 1:
+    if not user_is_admin(cursor, session["username"]):
         conn.close()
         return "Access denied"
 
@@ -308,13 +341,7 @@ def toggle_admin(username):
     cursor = conn.cursor()
 
     # check current user is admin
-    cursor.execute(
-        "SELECT is_admin FROM users WHERE username = ?",
-        (session["username"],)
-    )
-    current_user = cursor.fetchone()
-
-    if not current_user or current_user[0] != 1:
+    if not user_is_admin(cursor, session["username"]):
         conn.close()
         return "Access denied"
 
@@ -343,13 +370,7 @@ def export_volunteer_data():
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
 
-    cursor.execute(
-        "SELECT is_admin FROM users WHERE username = ?",
-        (session["username"],)
-    )
-    current_user = cursor.fetchone()
-
-    if not current_user or current_user[0] != 1:
+    if not user_is_admin(cursor, session["username"]):
         conn.close()
         return "Access denied"
 
